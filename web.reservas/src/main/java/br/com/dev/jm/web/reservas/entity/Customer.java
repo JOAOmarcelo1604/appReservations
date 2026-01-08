@@ -1,4 +1,4 @@
-package br.com.dev.jm.web.reservas.repository;
+package br.com.dev.jm.web.reservas.entity;
 
 
 import jakarta.persistence.*;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class customers {
+public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,7 +42,7 @@ public class customers {
     @Column(name = "preferred_language", length = 2)
     private String preferredLanguage;
 
-    @Column(name = "contry_origin")
+    @Column(name = "country_origin")
     private String countryOrigin;
 
     @Column(columnDefinition = "TEXT")
