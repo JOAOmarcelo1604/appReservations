@@ -15,6 +15,5 @@ public interface ReservationDAO extends JpaRepository<Reservation, Long> {
             "AND r.status <> 'CANCELED' " +
             "AND (r.checkIn < :checkOut AND r.checkOut > :checkIn)")
     List<Reservation> findConflictingReservations(Long unitId, LocalDate checkIn, LocalDate checkOut);
-    // No UnitRepository.java
 
 }

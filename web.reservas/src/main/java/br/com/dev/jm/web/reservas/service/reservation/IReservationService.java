@@ -10,6 +10,7 @@ public interface IReservationService {
     public Reservation update(Long id, Reservation reservation);
     public Reservation canceled(Long id);
     public Reservation findById(Long id);
+    public  void delete(Long id);
     List<Reservation> findAll();
 
 }

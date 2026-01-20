@@ -41,16 +41,36 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
     @PutMapping("/{id}")
-    public ResponseEntity<Reservation> updateReservation(@PathVariable Long id, @RequestBody Reservation reservationUpdate){
-        reservationUpdate.setId(id);
-        Reservation res = service.update(id,reservationUpdate);
-            return ResponseEntity.status(200).body(res);
+    public ResponseEntity<Reservation> updateReservation(@PathVariable Long id, @RequestBody ReservationDTO dto) {
+        // 1. Converter DTO para Entidade
+        Reservation reservationUpdate = new Reservation();
 
+        reservationUpdate.setCheckIn(dto.getCheckIn());
+        reservationUpdate.setCheckOut(dto.getCheckOut());
+
+        // AQUI ESTÁ O SEGREDO: Transformar o long unitId em Objeto Unit
+        if (dto.getUnitId() != null) {
+            Unit u = new Unit();
+            u.setId(dto.getUnitId()); // Seta o ID 2 aqui
+            reservationUpdate.setUnit(u);
+        }
+
+        if (dto.getCustomerId() != null) {
+            Customer c = new Customer();
+            c.setId(dto.getCustomerId());
+            reservationUpdate.setCustomer(c);
+        }
+
+        // 2. Agora o Service recebe uma reserva com Unit preenchida!
+        Reservation res = service.update(id, reservationUpdate);
+
+        return ResponseEntity.ok(res);
     }
 
-    @PutMapping("/{id}/cancel")
-    public ResponseEntity<Reservation> cancelReservation(@PathVariable Long id) {
-        return ResponseEntity.ok(service.canceled(id));
+    @DeleteMapping("/{id}/cancel")
+    public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {
+        service.delete(id);
+        return ResponseEntity.noContent().build(); // Retorna 204 No Content
     }
 
     // --- Método Auxiliar de Conversão ---
@@ -68,5 +88,22 @@ public class ReservationController {
                 .checkIn(dto.getCheckIn())
                 .checkOut(dto.getCheckOut())
                 .build();
+    }
+
+    @PatchMapping("/{id}/pay")
+    public ResponseEntity<Reservation> confirmPayment(@PathVariable Long id) {
+        // Você poderia criar esse método no Service
+        Reservation reserva = service.findById(id);
+
+        if ("CANCELED".equals(reserva.getStatus())) {
+            return ResponseEntity.badRequest().body(null); // Não pode pagar cancelada
+        }
+
+        reserva.setPaymentStatus("PAID");
+        reserva.setStatus("CONFIRMED"); // Se pagou, a reserva está garantida!
+
+        service.save(reserva); // O save simples serve, ou crie um updateStatus específico
+
+        return ResponseEntity.ok(reserva);
     }
 }
