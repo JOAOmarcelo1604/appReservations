@@ -35,4 +35,16 @@ public class Unit {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "city")
+    private String city;
+
+    @Column(name = "state")
+    private String state;
+
+    @Column(name = "airbnb_url", length = 255)
+    private String airbnbUrl;
+
+    @Column(name = "address")
+    private String address;
 }

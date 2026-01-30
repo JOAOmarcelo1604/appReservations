@@ -30,9 +30,12 @@ public class WebSecurityConfig {
                         //.requestMatchers(HttpMethod.GET, "/reservations/**").permitAll()
                         //.requestMatchers(HttpMethod.PUT, "/reservations/**").permitAll()
                         //.requestMatchers(HttpMethod.DELETE, "/reservations/**").permitAll()
-                        //.requestMatchers(HttpMethod.POST, "/units/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/units/**").permitAll()
                       //  .requestMatchers(HttpMethod.GET, "/units/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v3/**").permitAll()
+                        //.requestMatchers(HttpMethod.POST, "/api/sync/**").permitAll()
 
 
 

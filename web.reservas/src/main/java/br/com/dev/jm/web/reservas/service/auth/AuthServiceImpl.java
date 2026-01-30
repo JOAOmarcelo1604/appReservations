@@ -17,7 +17,7 @@ public class AuthServiceImpl implements IAuthService {
 
     @Autowired
     private CustomerDAO repository; // Use o Repository, não o DAO (se possível)
-
+/*
     @Override
     public Customer criarUsuario(Customer novo) {
         //criptografar a senha ANTES de salvar
@@ -33,7 +33,7 @@ public class AuthServiceImpl implements IAuthService {
 
         return repository.save(novo);
     }
-
+*/
     @Override
     public UsuarioToken realizarLogin(LoginDTO dadosLogin) { // Mudei para receber DTO
         // 1. Busca o usuário no banco pelo E-mail

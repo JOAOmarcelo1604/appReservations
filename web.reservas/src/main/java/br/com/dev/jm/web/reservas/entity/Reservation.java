@@ -36,6 +36,12 @@ public class Reservation {
     @Column(length = 20)
     private String status; // PENDING, CONFIRMED, CANCELED
 
+    @Column(name = "origin", nullable = false)
+    private String origin;
+
+    @Column(unique = true)
+    private String externalUid;
+
     @Column(name = "payment_status", length = 20)
     private String paymentStatus; // UNPAID, PAID
 

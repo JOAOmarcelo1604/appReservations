@@ -1,10 +1,13 @@
 package br.com.dev.jm.web.reservas.service.reservation;
 
+import br.com.dev.jm.web.reservas.entity.Customer;
 import br.com.dev.jm.web.reservas.entity.Reservation;
 import br.com.dev.jm.web.reservas.entity.Unit;
+import br.com.dev.jm.web.reservas.repository.CustomerDAO;
 import br.com.dev.jm.web.reservas.repository.ReservationDAO;
 
 import br.com.dev.jm.web.reservas.repository.UnitDAO;
+import br.com.dev.jm.web.reservas.service.email.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,8 @@ public class ReservationServiceImpl implements IReservationService {
 
     private final ReservationDAO reservationRepository;
     private final UnitDAO unitRepository; // Necessário para checar a hierarquia
+    private final CustomerDAO customerRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -34,8 +39,17 @@ public class ReservationServiceImpl implements IReservationService {
                 .orElseThrow(() -> new RuntimeException("Unidade não encontrada"));
         novaReserva.setUnit(unidadeAlvo);
 
-        // 3. VALIDAR DISPONIBILIDADE (O Coração do Sistema)
         validarConflitos(unidadeAlvo, novaReserva);
+
+       // --- 3. NOVO: Carregar o Cliente Completo ---
+        // Se não fizer isso, o getEmail() retorna null
+        if (novaReserva.getCustomer() != null && novaReserva.getCustomer().getId() != null) {
+            Customer clienteAlvo = customerRepository.findById(novaReserva.getCustomer().getId())
+                    .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+            novaReserva.setCustomer(clienteAlvo);
+        } else {
+            throw new IllegalArgumentException("É obrigatório informar o ID do cliente.");
+        }
 
         long dias = ChronoUnit.DAYS.between(novaReserva.getCheckIn(), novaReserva.getCheckOut());
         if (dias < 1) {
@@ -58,7 +72,23 @@ public class ReservationServiceImpl implements IReservationService {
             novaReserva.setPaymentStatus("UNPAID");
         }
 
-        return reservationRepository.save(novaReserva);
+        Reservation savedReservation = reservationRepository.save(novaReserva);
+
+        try {
+            emailService.sendReservationConfirmation(
+                    savedReservation.getCustomer().getEmail(),
+                    savedReservation.getCustomer().getFullName(),
+                    savedReservation.getUnit().getName(),
+                    savedReservation.getCheckIn().toString(),
+                    savedReservation.getCheckOut().toString(),
+                    savedReservation.getTotalAmount()
+                    );
+        }  catch (Exception e) {
+            // Logar o erro de email, mas não impedir a reserva
+            System.err.println("Erro ao enviar email: " + e.getMessage());
+        }
+        return savedReservation;
+
     }
 
 

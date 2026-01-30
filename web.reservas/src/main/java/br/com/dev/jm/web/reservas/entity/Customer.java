@@ -54,6 +54,9 @@ public class Customer {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "role", length = 20, nullable = false)
+    private String role;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

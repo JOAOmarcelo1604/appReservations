@@ -3,6 +3,8 @@ package br.com.dev.jm.web.reservas.controller;
 import br.com.dev.jm.web.reservas.dto.UnitDTO;
 import br.com.dev.jm.web.reservas.entity.Customer;
 import br.com.dev.jm.web.reservas.entity.Unit;
+import br.com.dev.jm.web.reservas.repository.UnitDAO;
+import br.com.dev.jm.web.reservas.service.airbnb.AirbnbSyncService;
 import br.com.dev.jm.web.reservas.service.unit.IUnitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,19 +19,35 @@ import java.util.List;
 public class UnitController {
 
     private final IUnitService service;
+    private final UnitDAO repository;
+    private final AirbnbSyncService syncService;
 
     @PostMapping
     public ResponseEntity<Unit> create(@RequestBody UnitDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.save(dto));
     }
 
-    @GetMapping
-    public ResponseEntity<List<Unit>> listAll() {
-        return ResponseEntity.ok(service.findAll());
-    }
+   // @GetMapping
+    //public ResponseEntity<List<Unit>> listAll() {
+     //   return ResponseEntity.ok(service.findAll());
+    //}
 
     @GetMapping("/{id}")
     public ResponseEntity<Unit> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.findById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Unit>> getAll(@RequestParam(required = false) String city) {
+        if (city != null) {
+            return ResponseEntity.ok(repository.findByCity(city));
+        }
+        return ResponseEntity.ok(repository.findAll());
+    }
+
+    @PostMapping("/api/sync/airbnb")
+    public ResponseEntity<String> forceSync() {
+        syncService.syncAllUnits();
+        return ResponseEntity.ok("Sincronização iniciada! Verifique os logs.");
     }
 }

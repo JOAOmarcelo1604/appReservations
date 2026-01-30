@@ -23,6 +23,9 @@ public class UnitServiceImpl implements IUnitService {
                 .capacity(dto.getCapacity())
                 .defaultPrice(dto.getDefaultPrice())
                 .description(dto.getDescription())
+                .city(dto.getCity())
+                .state(dto.getState())
+                .address(dto.getAddress())
                 .build();
 
         // Lógica de Hierarquia

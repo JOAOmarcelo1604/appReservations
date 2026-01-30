@@ -6,6 +6,6 @@ import br.com.dev.jm.web.reservas.security.UsuarioToken;
 
 public interface IAuthService {
 
-    public Customer criarUsuario(Customer novo);
+    //public Customer criarUsuario(Customer novo);
     UsuarioToken realizarLogin(LoginDTO dadosLogin);
 }

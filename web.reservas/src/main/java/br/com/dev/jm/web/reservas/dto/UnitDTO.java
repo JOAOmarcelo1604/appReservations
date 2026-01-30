@@ -9,6 +9,9 @@ public class UnitDTO {
     private Integer capacity;
     private BigDecimal defaultPrice;
     private String description;
+    private String city;
+    private String state;
+    private String address;
 
     // O pulo do gato: Se for null, é Casa Principal.
     // Se tiver número, é um Quarto filho dessa casa.

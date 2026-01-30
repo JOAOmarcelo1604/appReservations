@@ -4,6 +4,7 @@ import br.com.dev.jm.web.reservas.entity.Customer;
 import br.com.dev.jm.web.reservas.repository.CustomerDAO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,8 @@ public class CustomerServiceImpl implements ICustomerService {
 
     private final CustomerDAO customerDAO;
 
+    private final PasswordEncoder passwordEncoder;
+
 
     @Override
     @Transactional
@@ -27,6 +30,14 @@ public class CustomerServiceImpl implements ICustomerService {
         if(novo.getCpf() != null && customerDAO.existsByCpf(novo.getCpf())){
             throw new IllegalArgumentException("Já existe um cliente com este CPF");
         }
+        if(novo.getCpf() != null && customerDAO.existsByPhoneNumber(novo.getPhoneNumber())){
+            throw new IllegalArgumentException("Já existe um cliente com este Telefone");
+        }
+
+
+        // 3. CRIPTOGRAFIA: Nunca salvar a senha pura
+        String senhaCriptografada = passwordEncoder.encode(novo.getPassword());
+        novo.setPassword(senhaCriptografada);
         return customerDAO.save(novo);
     }
 

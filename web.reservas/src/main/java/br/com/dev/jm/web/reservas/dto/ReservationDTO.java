@@ -13,4 +13,5 @@ public class ReservationDTO {
     private Long unitId;
     private LocalDate checkIn;
     private LocalDate checkOut;
+    private String origin;
 }

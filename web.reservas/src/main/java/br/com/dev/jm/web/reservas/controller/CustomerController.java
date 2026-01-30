@@ -21,7 +21,7 @@ public class CustomerController {
 
     private final ICustomerService service;
 
-    private final IAuthService authService;
+
 
     @GetMapping
     public ResponseEntity<List<Customer>> getAll(){
@@ -42,7 +42,7 @@ public class CustomerController {
 
     @PostMapping
     public ResponseEntity<Customer> createCustomer(@RequestBody Customer novo){
-        Customer res = authService.criarUsuario(novo);
+        Customer res = service.insertCustomer(novo);
         if(res != null){
             return ResponseEntity.status(HttpStatus.CREATED).body(res);
         }
