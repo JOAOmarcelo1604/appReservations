@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -106,4 +107,11 @@ public class ReservationController {
 
         return ResponseEntity.ok(reserva);
     }
+
+    @GetMapping("/occupied-dates")
+    public ResponseEntity<List<LocalDate>> getOccupiedDates(@RequestParam Long unitId) {
+        List<LocalDate> dates = service.getOccupiedDates(unitId);
+        return ResponseEntity.ok(dates);
+    }
+
 }

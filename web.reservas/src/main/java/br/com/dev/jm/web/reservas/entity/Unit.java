@@ -45,6 +45,6 @@ public class Unit {
     @Column(name = "airbnb_url", length = 255)
     private String airbnbUrl;
 
-    @Column(name = "address")
+    @Column(name = "address", unique = true)
     private String address;
 }

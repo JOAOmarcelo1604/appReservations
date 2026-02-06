@@ -2,6 +2,7 @@ package br.com.dev.jm.web.reservas.service.reservation;
 
 import br.com.dev.jm.web.reservas.entity.Reservation;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface IReservationService {
@@ -12,5 +13,6 @@ public interface IReservationService {
     public Reservation findById(Long id);
     public  void delete(Long id);
     List<Reservation> findAll();
+    List<LocalDate> getOccupiedDates(Long unitId);
 
 }

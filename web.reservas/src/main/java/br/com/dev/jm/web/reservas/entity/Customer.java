@@ -36,7 +36,7 @@ public class Customer {
     @Column(name = "cpf", length = 14, unique = true)
     private String cpf;
 
-    @Column(name = "passport_number", length = 30)
+    @Column(name = "passport_number", length = 30, unique = true)
     private String passportNumber;
 
     @Column(name = "birth_date", nullable = false)

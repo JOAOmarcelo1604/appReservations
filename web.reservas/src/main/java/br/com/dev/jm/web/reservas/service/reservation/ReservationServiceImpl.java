@@ -13,9 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -222,6 +225,8 @@ public class ReservationServiceImpl implements IReservationService {
         return reservationRepository.save(reservaExistente);
     }
 
+
+
     @Override
     public Reservation findById(Long id) {
         return reservationRepository.findById(id)
@@ -240,5 +245,36 @@ public class ReservationServiceImpl implements IReservationService {
         Reservation reserva = findById(id);
         // Aqui removemos fisicamente do banco
         reservationRepository.delete(reserva);
+    }
+
+    @Override
+    public List<LocalDate> getOccupiedDates(Long unitId) {
+        // 1. Busca reservas ativas
+        List<Reservation> reservations = reservationRepository.findByUnitIdAndStatusNot(unitId, "CANCELLED");
+
+        List<LocalDate> occupiedDates = new ArrayList<>();
+        LocalDate hoje = LocalDate.now(); // Data de hoje para filtrar o passado
+
+        for (Reservation res : reservations) {
+            // Só nos interessa se a reserva termina DEPOIS de hoje
+            if (res.getCheckOut().isAfter(hoje)) {
+                LocalDate start = res.getCheckIn();
+                LocalDate end = res.getCheckOut();
+
+                // Adiciona os dias na lista
+                start.datesUntil(end).forEach(date -> {
+                    // Opcional: Só adiciona se o dia for futuro (para não bloquear o passado no calendário)
+                    if (!date.isBefore(hoje)) {
+                        occupiedDates.add(date);
+                    }
+                });
+            }
+        }
+
+        // 2. Limpeza Final: Remove duplicados e Ordena
+        return occupiedDates.stream()
+                .distinct() // Remove datas repetidas (se houver overbooking)
+                .sorted()   // Ordena (fica bonito no JSON)
+                .collect(Collectors.toList());
     }
 }

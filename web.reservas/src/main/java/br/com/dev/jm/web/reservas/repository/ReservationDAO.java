@@ -39,4 +39,8 @@ public interface ReservationDAO extends JpaRepository<Reservation, Long> {
     void deleteAllFutureAirbnb(@Param("unitId") Long unitId,
                                @Param("hoje") LocalDateTime hoje);
 
+    List<Reservation> findByUnitIdAndStatusNot(Long unitId, String status);
+
+    List<Reservation> findAllByUnitId(Long unitId);
+
 }
