@@ -1,4 +1,4 @@
-package br.com.dev.jm.web.reservas.service.airbnb;
+package br.com.dev.jm.web.reservas.service.vrbo;
 
 import biweekly.Biweekly;
 import biweekly.ICalendar;
@@ -27,21 +27,22 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class AirbnbSyncService {
+public class VrboSyncService {
 
     private final UnitDAO unitRepository;
     private final ReservationDAO reservationRepository;
     private final CustomerDAO customerRepository;
 
+    // Roda a cada 30 min
     @Scheduled(fixedRate = 1800000)
     @Transactional
     public void syncAllUnits() {
-        // 1. Busca todas as unidades que têm link do Airbnb configurado
         List<Unit> units = unitRepository.findAll();
 
         for (Unit unit : units) {
-            if (unit.getAirbnbUrl() != null && !unit.getAirbnbUrl().isEmpty()) {
-                System.out.println("Sincronizando unidade: " + unit.getName());
+            // Verifica se tem URL do Vrbo configurada
+            if (unit.getVrboUrl() != null && !unit.getVrboUrl().isEmpty()) {
+                System.out.println("Sincronizando Vrbo para unidade: " + unit.getName());
                 importCalendar(unit);
             }
         }
@@ -49,102 +50,88 @@ public class AirbnbSyncService {
 
     private void importCalendar(Unit unit) {
         try {
-            // 2. Garante que existe um usuário "Airbnb" no banco
-            Customer airbnbCustomer = getOrCreateAirbnbCustomer();
+            Customer vrboCustomer = getOrCreateVrboCustomer();
 
-            // 3. Lê o arquivo .ics direto da URL
-            InputStream in = new URL(unit.getAirbnbUrl()).openStream();
+            InputStream in = new URL(unit.getVrboUrl()).openStream();
             ICalendar ical = Biweekly.parse(in).first();
 
             if (ical == null) return;
 
             List<String> activeUids = new ArrayList<>();
 
-            // 4. Varre todos os eventos do calendário
             for (VEvent event : ical.getEvents()) {
-                // Proteção contra UID nulo
-                if (event.getUid() == null || event.getUid().getValue() == null) continue;
-
+                // Vrbo as vezes não manda UID limpo, mas o Biweekly resolve
                 String uid = event.getUid().getValue();
+                if (uid == null) continue;
+
                 activeUids.add(uid);
 
-                // Conversão de data (Date -> LocalDateTime)
                 Date start = event.getDateStart().getValue();
                 Date end = event.getDateEnd().getValue();
+
+                // Conversão segura de Date para LocalDate
                 LocalDate checkIn = start.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
                 LocalDate checkOut = end.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
-                // 5. Verifica se já existe essa reserva
+                // Verifica se já existe pelo UID externo
                 Optional<Reservation> existing = reservationRepository.findByExternalUid(uid);
 
                 if (existing.isPresent()) {
-                    // ATUALIZAÇÃO: Se as datas mudaram, atualiza
+                    // ATUALIZAÇÃO: Se mudou a data, atualiza
                     Reservation res = existing.get();
                     if (!res.getCheckIn().isEqual(checkIn) || !res.getCheckOut().isEqual(checkOut)) {
                         res.setCheckIn(checkIn);
                         res.setCheckOut(checkOut);
                         reservationRepository.save(res);
-                        System.out.println("Reserva Airbnb Atualizada: " + uid);
+                        System.out.println("Reserva Vrbo Atualizada: " + uid);
                     }
                 } else {
                     // CRIAÇÃO: Nova reserva
                     Reservation newRes = new Reservation();
                     newRes.setUnit(unit);
-                    newRes.setCustomer(airbnbCustomer);
+                    newRes.setCustomer(vrboCustomer);
                     newRes.setCheckIn(checkIn);
                     newRes.setCheckOut(checkOut);
                     newRes.setTotalAmount(BigDecimal.ZERO);
                     newRes.setStatus("CONFIRMED");
-                    newRes.setOrigin("AIRBNB"); // Origem Airbnb
+                    newRes.setPaymentStatus("PAID");
+                    newRes.setOrigin("VRBO"); // <--- Importante: Origem VRBO
                     newRes.setExternalUid(uid);
 
                     reservationRepository.save(newRes);
-                    System.out.println("Nova Reserva Airbnb Importada: " + uid);
+                    System.out.println("Nova Reserva Vrbo Importada: " + uid);
                 }
             }
 
+            // LIMPEZA DE CANCELAMENTOS (A Mágica)
             LocalDateTime hoje = LocalDateTime.now();
 
-            // === AQUI ESTÁ A MUDANÇA (Descomentado e Atualizado) ===
             if (activeUids.isEmpty()) {
-                // Se a lista veio vazia, remove TUDO do Airbnb futuro
-                // Usamos o método genérico passando "AIRBNB"
-                reservationRepository.deleteAllFutureByOrigin(unit.getId(), hoje, "AIRBNB");
-                System.out.println("Limpeza completa: Nenhuma reserva ativa no Airbnb.");
+                // Se o calendário veio vazio, apaga tudo que é futuro do Vrbo
+                reservationRepository.deleteAllFutureByOrigin(unit.getId(), hoje, "VRBO");
             } else {
-                // Se tem reservas, remove apenas as órfãs (canceladas) do Airbnb
-                // Usamos o método genérico passando "AIRBNB"
-                reservationRepository.deleteOrphansByOrigin(unit.getId(), hoje, activeUids, "AIRBNB");
+                // Apaga o que está no banco mas NÃO veio no iCal (Cancelados)
+                reservationRepository.deleteOrphansByOrigin(unit.getId(), hoje, activeUids, "VRBO");
             }
-            // ========================================================
-
-            System.out.println("Sincronização finalizada para: " + unit.getName());
 
         } catch (Exception e) {
-            System.err.println("Erro ao sincronizar unidade " + unit.getName() + ": " + e.getMessage());
+            System.err.println("Erro ao sincronizar Vrbo unidade " + unit.getName() + ": " + e.getMessage());
         }
     }
 
-    // Método auxiliar para não dar erro de "Customer Null"
-    private Customer getOrCreateAirbnbCustomer() {
-        return customerRepository.findByEmail("sistema@airbnb.com")
+    private Customer getOrCreateVrboCustomer() {
+        return customerRepository.findByEmail("sistema@vrbo.com")
                 .orElseGet(() -> {
                     Customer c = new Customer();
-                    c.setFullName("Airbnb Guest (Importado)");
-                    c.setEmail("sistema@airbnb.com");
-                    c.setPassword("SENHA_GERADA_AUTO_BLOQUEADA");
+                    c.setFullName("Vrbo Guest (Importado)");
+                    c.setEmail("sistema@vrbo.com");
+                    c.setPassword("SENHA_SISTEMA_VRBO");
                     c.setRole("USER");
-
-                    // --- CORREÇÃO AQUI ---
-                    // Preenchendo campos obrigatórios com dados fictícios para passar no banco
                     c.setBirthDate(LocalDate.of(2000, 1, 1));
-                    c.setPhoneNumber("0000000000"); // Coloque um dummy se for obrigatório
-                    c.setCpf("00000000000");        // Coloque um dummy se for obrigatório
-                    c.setCountryOrigin("BR");       // Coloque um dummy se for obrigatório
-                    // ---------------------
-
+                    c.setPhoneNumber("0000000000");
+                    c.setCpf("00000000000");
+                    c.setCountryOrigin("BR");
                     return customerRepository.save(c);
                 });
     }
 }
-

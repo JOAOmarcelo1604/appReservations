@@ -22,25 +22,32 @@ public interface ReservationDAO extends JpaRepository<Reservation, Long> {
 
     Optional<Reservation> findByExternalUid(String externalUid);
 
-    @Modifying
-    @Query("DELETE FROM Reservation r WHERE r.unit.id = :unitId " +
-            "AND r.origin = 'AIRBNB' " +
-            "AND r.checkIn >= :hoje " + // Só apaga reservas futuras
-            "AND r.externalUid NOT IN :uidsAtivos")
-    void deleteOrphans(@Param("unitId") Long unitId,
-                       @Param("hoje") LocalDateTime hoje,
-                       @Param("uidsAtivos") List<String> uidsAtivos);
-
-    // CASO 2: O arquivo do Airbnb veio vazio (ex: dono cancelou tudo). Apaga tudo futuro.
-    @Modifying
-    @Query("DELETE FROM Reservation r WHERE r.unit.id = :unitId " +
-            "AND r.origin = 'AIRBNB' " +
-            "AND r.checkIn >= :hoje")
-    void deleteAllFutureAirbnb(@Param("unitId") Long unitId,
-                               @Param("hoje") LocalDateTime hoje);
 
     List<Reservation> findByUnitIdAndStatusNot(Long unitId, String status);
 
     List<Reservation> findAllByUnitId(Long unitId);
 
+    List<Reservation> findByCustomerId(Long customerId);
+
+    // Método essencial para verificar conflito de datas (Overlapping)
+    @Query("SELECT COUNT(r) > 0 FROM Reservation r " +
+            "WHERE r.unit.id = :unitId " +
+            "AND r.status <> 'CANCELLED' " +
+            "AND ((r.checkIn < :checkOut) AND (r.checkOut > :checkIn))")
+    boolean existsByUnitIdAndCheckInLessThanEqualAndCheckOutGreaterThanEqual(
+            @Param("unitId") Long unitId,
+            @Param("checkOut") LocalDate checkOut,
+            @Param("checkIn") LocalDate checkIn);
+
+
+    // 1. Apaga TUDO do futuro se o calendário vier vazio
+    @Modifying
+    @Query("DELETE FROM Reservation r WHERE r.unit.id = :unitId AND r.origin = :origin AND r.checkIn >= :now")
+    void deleteAllFutureByOrigin(@Param("unitId") Long unitId, @Param("now") LocalDateTime now, @Param("origin") String origin);
+
+    // 2. Apaga "Órfãos" (Reservas que existem no banco mas não vieram na lista do iCal)
+    @Modifying
+    @Query("DELETE FROM Reservation r WHERE r.unit.id = :unitId AND r.origin = :origin AND r.checkIn >= :now AND r.externalUid NOT IN :activeUids")
+    void deleteOrphansByOrigin(@Param("unitId") Long unitId, @Param("now") LocalDateTime now, @Param("activeUids") List<String> activeUids, @Param("origin") String origin);
 }
+

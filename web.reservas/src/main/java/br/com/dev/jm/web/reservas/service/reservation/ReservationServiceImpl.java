@@ -95,6 +95,7 @@ public class ReservationServiceImpl implements IReservationService {
     }
 
 
+
     private void validarConflitos(Unit unidade, Reservation r) {
         // A. Checar conflito direto (Alguém já reservou ESSA unidade?)
         if (temReservaNessePeriodo(unidade.getId(), r)) {
@@ -276,5 +277,15 @@ public class ReservationServiceImpl implements IReservationService {
                 .distinct() // Remove datas repetidas (se houver overbooking)
                 .sorted()   // Ordena (fica bonito no JSON)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Reservation> getMinhasReservas(String emailCliente) {
+        // 1. Acha o cliente pelo email (quem está logado)
+        Customer customer = customerRepository.findByEmail(emailCliente)
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+
+        // 2. Busca as reservas dele
+        return reservationRepository.findByCustomerId(customer.getId());
     }
 }

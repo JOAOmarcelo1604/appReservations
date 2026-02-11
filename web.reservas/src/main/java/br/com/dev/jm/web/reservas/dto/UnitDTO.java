@@ -1,7 +1,9 @@
 package br.com.dev.jm.web.reservas.dto;
 
+import br.com.dev.jm.web.reservas.entity.UnitImage;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 public class UnitDTO {
@@ -16,4 +18,8 @@ public class UnitDTO {
     // O pulo do gato: Se for null, é Casa Principal.
     // Se tiver número, é um Quarto filho dessa casa.
     private Long parentId;
+    private List<UnitImage> images;
+    private BigDecimal areaM2;
+    private String vrboUrl;
+    private String airbnbUrl;
 }

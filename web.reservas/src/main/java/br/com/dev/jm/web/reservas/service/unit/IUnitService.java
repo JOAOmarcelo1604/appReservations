@@ -13,4 +13,5 @@ public interface IUnitService {
     List<Unit> findAll();
     public Unit findById(Long Id);
 
+    void addImageToUnit(Long unitId, String photoUrl);
 }

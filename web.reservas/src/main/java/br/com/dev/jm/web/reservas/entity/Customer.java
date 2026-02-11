@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.hibernate.validator.constraints.br.CPF;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -34,6 +36,7 @@ public class Customer {
     private String phoneNumber;
 
     @Column(name = "cpf", length = 14, unique = true)
+    @CPF(message = "CPF inválido. Verifique os dígitos.")
     private String cpf;
 
     @Column(name = "passport_number", length = 30, unique = true)

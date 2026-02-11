@@ -8,6 +8,7 @@ import br.com.dev.jm.web.reservas.service.reservation.IReservationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -28,6 +29,13 @@ public class ReservationController {
     @GetMapping("/{id}")
     public ResponseEntity<Reservation> findById(@PathVariable Long id ){
         return ResponseEntity.ok(service.findById(id));
+    }
+
+    @GetMapping("/my-reservations") // <--- O Spring prefere rotas exatas do que variáveis
+    public ResponseEntity<List<Reservation>> getMyReservations(Authentication auth) {
+        String email = auth.getName();
+        List<Reservation> reservas = service.getMinhasReservas(email);
+        return ResponseEntity.ok(reservas);
     }
 
     // --- MUDANÇA AQUI: Recebe DTO ---

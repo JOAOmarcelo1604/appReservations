@@ -3,6 +3,7 @@ package br.com.dev.jm.web.reservas.controller;
 import br.com.dev.jm.web.reservas.service.auth.IAuthService;
 import br.com.dev.jm.web.reservas.entity.Customer;
 import br.com.dev.jm.web.reservas.service.customer.ICustomerService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,7 +42,7 @@ public class CustomerController {
     }
 
     @PostMapping
-    public ResponseEntity<Customer> createCustomer(@RequestBody Customer novo){
+    public ResponseEntity<Customer> createCustomer(@RequestBody @Valid Customer novo){
         Customer res = service.insertCustomer(novo);
         if(res != null){
             return ResponseEntity.status(HttpStatus.CREATED).body(res);

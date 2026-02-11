@@ -14,5 +14,6 @@ public interface IReservationService {
     public  void delete(Long id);
     List<Reservation> findAll();
     List<LocalDate> getOccupiedDates(Long unitId);
+    List<Reservation> getMinhasReservas(String emailCliente);
 
 }

@@ -14,6 +14,7 @@ import java.util.List;
 public class UnitServiceImpl implements IUnitService {
 
     private final UnitDAO repository;
+    private final br.com.dev.jm.web.reservas.repository.UnitImageDAO unitImageRepository;
 
     @Override
     @Transactional
@@ -47,5 +48,21 @@ public class UnitServiceImpl implements IUnitService {
     public Unit findById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Unidade não encontrada"));
+    }
+
+    @Override
+    @Transactional // Importante para garantir que salva no banco
+    public void addImageToUnit(Long unitId, String photoUrl) {
+        // A. Busca a Unidade
+        Unit unit = repository.findById(unitId)
+                .orElseThrow(() -> new RuntimeException("Imóvel não encontrado"));
+
+        // B. Cria o objeto da Imagem
+        br.com.dev.jm.web.reservas.entity.UnitImage newImage = new br.com.dev.jm.web.reservas.entity.UnitImage();
+        newImage.setUnit(unit);
+        newImage.setUrl(photoUrl);
+
+        // C. Salva na tabela unit_images
+        unitImageRepository.save(newImage);
     }
 }

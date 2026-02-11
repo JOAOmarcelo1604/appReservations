@@ -8,4 +8,6 @@ import java.util.List;
 public interface UnitDAO extends JpaRepository<Unit,Long> {
     List<Unit> findByParentId(Long parentId);
     List<Unit> findByCity(String city);
+
+
 }

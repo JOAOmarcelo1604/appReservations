@@ -36,6 +36,13 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/v3/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/sync/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/review").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/review").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/vrbo/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/vrbo/**").permitAll()
+
+
+
                         .requestMatchers("/error").permitAll()
 
 

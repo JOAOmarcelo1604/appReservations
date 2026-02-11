@@ -1,11 +1,14 @@
 package br.com.dev.jm.web.reservas.entity;
 
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "units")
@@ -47,4 +50,13 @@ public class Unit {
 
     @Column(name = "address", unique = true)
     private String address;
+
+    @Column(name = "vrbo_url")
+    private String vrboUrl;
+
+    @Column(name = "area_m2") // O nome exato da coluna no banco
+    private BigDecimal areaM2;
+
+    @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UnitImage> images = new ArrayList<>();
 }
