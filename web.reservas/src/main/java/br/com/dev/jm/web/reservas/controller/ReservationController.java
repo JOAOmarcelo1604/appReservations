@@ -4,6 +4,9 @@ import br.com.dev.jm.web.reservas.dto.ReservationDTO;
 import br.com.dev.jm.web.reservas.entity.Customer;
 import br.com.dev.jm.web.reservas.entity.Reservation;
 import br.com.dev.jm.web.reservas.entity.Unit;
+import br.com.dev.jm.web.reservas.repository.CustomerDAO;
+import br.com.dev.jm.web.reservas.repository.ReservationDAO;
+import br.com.dev.jm.web.reservas.service.customer.ICustomerService;
 import br.com.dev.jm.web.reservas.service.reservation.IReservationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +23,10 @@ import java.util.List;
 public class ReservationController {
 
     private final IReservationService service;
+
+    private final ReservationDAO dto;
+
+    private final CustomerDAO customer;
 
     @GetMapping
     public ResponseEntity<List<Reservation>> findAll(){
@@ -50,30 +57,79 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
     @PutMapping("/{id}")
-    public ResponseEntity<Reservation> updateReservation(@PathVariable Long id, @RequestBody ReservationDTO dto) {
-        // 1. Converter DTO para Entidade
-        Reservation reservationUpdate = new Reservation();
+    public ResponseEntity<ReservationDTO> updateReservation(@PathVariable Long id, @RequestBody ReservationDTO dto) {
+        Reservation reservation = service.findById(id);
+        if (reservation == null) throw new RuntimeException("Reserva não encontrada");
 
-        reservationUpdate.setCheckIn(dto.getCheckIn());
-        reservationUpdate.setCheckOut(dto.getCheckOut());
-
-        // AQUI ESTÁ O SEGREDO: Transformar o long unitId em Objeto Unit
-        if (dto.getUnitId() != null) {
-            Unit u = new Unit();
-            u.setId(dto.getUnitId()); // Seta o ID 2 aqui
-            reservationUpdate.setUnit(u);
+        // 1. Atualiza Preço
+        if (dto.getTotalAmount() != null) {
+            reservation.setTotalAmount(dto.getTotalAmount());
         }
 
+        // 2. LÓGICA DE CLIENTE
         if (dto.getCustomerId() != null) {
-            Customer c = new Customer();
-            c.setId(dto.getCustomerId());
-            reservationUpdate.setCustomer(c);
+            // CENÁRIO A: Cliente do Site (Existente)
+            Customer clienteExistente = customer.findById(dto.getCustomerId())
+                    .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+            reservation.setCustomer(clienteExistente);
+
+            // Limpa dados de hóspede avulso
+            reservation.setGuestName(null);
+            reservation.setGuestPhone(null);
+            reservation.setGuestEmail(null); // Limpa e-mail avulso
+
+        } else if (dto.getNewCustomerName() != null && !dto.getNewCustomerName().isBlank()) {
+            // CENÁRIO B: Hóspede Airbnb/Vrbo (Avulso)
+
+            // Vincula ao Robô (ID 3) para satisfazer o banco
+            Customer robo = customer.findById(3L).orElseThrow();
+            reservation.setCustomer(robo);
+
+            // Salva os dados reais NA RESERVA
+            reservation.setGuestName(dto.getNewCustomerName());
+            reservation.setGuestPhone(dto.getNewCustomerPhone());
+            reservation.setGuestEmail(dto.getNewCustomerEmail()); // <--- SALVA O E-MAIL AQUI
         }
 
-        // 2. Agora o Service recebe uma reserva com Unit preenchida!
-        Reservation res = service.update(id, reservationUpdate);
+        Reservation updated = service.update(id, reservation);
+        return ResponseEntity.ok(toDTO(updated));
+    }
+    // Método auxiliar para converter Entidade -> DTO (Caso você não tenha Mapper)
+    private ReservationDTO toDTO(Reservation res) {
+        ReservationDTO dto = new ReservationDTO();
 
-        return ResponseEntity.ok(res);
+        // Campos básicos
+        dto.setCheckIn(res.getCheckIn());
+        dto.setCheckOut(res.getCheckOut());
+        dto.setOrigin(res.getOrigin());
+        dto.setTotalAmount(res.getTotalAmount());
+        dto.setUnitId(res.getUnit() != null ? res.getUnit().getId() : null);
+
+        // --- LÓGICA DE EXIBIÇÃO INTELIGENTE ---
+
+        // 1. O ID do Customer sempre vai (seja o real ou o ID 3 do robô)
+        if (res.getCustomer() != null) {
+            dto.setCustomerId(res.getCustomer().getId());
+        }
+
+        // 2. Decidir qual NOME mostrar para o usuário
+        if (res.getGuestName() != null && !res.getGuestName().isBlank()) {
+            // Se tiver nome avulso (Airbnb), usa ele
+            dto.setNewCustomerName(res.getGuestName());
+            dto.setNewCustomerPhone(res.getGuestPhone());
+            dto.setNewCustomerEmail(res.getGuestEmail());
+            // Dica: Você pode criar um campo 'displayName' no DTO para facilitar
+        } else if (res.getCustomer() != null) {
+            // Se não, usa o nome do cadastro oficial
+            dto.setNewCustomerName(res.getCustomer().getFullName());
+            dto.setNewCustomerPhone(res.getCustomer().getPhoneNumber());
+            dto.setNewCustomerEmail(res.getCustomer().getEmail());
+        }
+
+        // Lógica do isImported
+        dto.setImported(res.getOrigin() != null && !"SITE".equalsIgnoreCase(res.getOrigin()));
+
+        return dto;
     }
 
     @DeleteMapping("/{id}/cancel")

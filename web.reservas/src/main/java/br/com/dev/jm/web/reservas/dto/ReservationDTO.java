@@ -14,4 +14,10 @@ public class ReservationDTO {
     private LocalDate checkIn;
     private LocalDate checkOut;
     private String origin;
+    private boolean isImported;
+    private BigDecimal totalAmount;
+
+    private String newCustomerName;
+    private String newCustomerEmail;
+    private String newCustomerPhone;
 }

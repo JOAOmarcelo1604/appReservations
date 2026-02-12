@@ -42,6 +42,12 @@ public class Reservation {
     @Column(unique = true)
     private String externalUid;
 
+    private String guestName;
+
+    private String guestPhone;
+
+    private String guestEmail;
+
     @Column(name = "payment_status", length = 20)
     private String paymentStatus; // UNPAID, PAID
 

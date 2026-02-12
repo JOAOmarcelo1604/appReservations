@@ -4,6 +4,7 @@ import br.com.dev.jm.web.reservas.entity.Reservation;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface IReservationService {
 
@@ -15,5 +16,6 @@ public interface IReservationService {
     List<Reservation> findAll();
     List<LocalDate> getOccupiedDates(Long unitId);
     List<Reservation> getMinhasReservas(String emailCliente);
+
 
 }

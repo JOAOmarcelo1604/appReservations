@@ -29,15 +29,16 @@ public interface ReservationDAO extends JpaRepository<Reservation, Long> {
 
     List<Reservation> findByCustomerId(Long customerId);
 
-    // Método essencial para verificar conflito de datas (Overlapping)
-    @Query("SELECT COUNT(r) > 0 FROM Reservation r " +
-            "WHERE r.unit.id = :unitId " +
+    // Método NOVO: Busca conflitos ignorando o ID da própria reserva (para Updates)
+    @Query("SELECT r FROM Reservation r WHERE r.unit.id = :unitId " +
             "AND r.status <> 'CANCELLED' " +
-            "AND ((r.checkIn < :checkOut) AND (r.checkOut > :checkIn))")
-    boolean existsByUnitIdAndCheckInLessThanEqualAndCheckOutGreaterThanEqual(
+            "AND (r.checkIn < :checkOut AND r.checkOut > :checkIn) " +
+            "AND r.id <> :excludeId") // <--- O PULO DO GATO: Ignora este ID
+    List<Reservation> findConflictingReservationsExcludingId(
             @Param("unitId") Long unitId,
+            @Param("checkIn") LocalDate checkIn,
             @Param("checkOut") LocalDate checkOut,
-            @Param("checkIn") LocalDate checkIn);
+            @Param("excludeId") Long excludeId);
 
 
     // 1. Apaga TUDO do futuro se o calendário vier vazio

@@ -97,45 +97,40 @@ public class ReservationServiceImpl implements IReservationService {
 
 
     private void validarConflitos(Unit unidade, Reservation r) {
-        // A. Checar conflito direto (Alguém já reservou ESSA unidade?)
-        if (temReservaNessePeriodo(unidade.getId(), r)) {
-            throw new IllegalArgumentException("Esta unidade já está reservada para estas datas.");
-        }
 
-        // B. Checar conflito com o PAI (Se tento alugar o Quarto, a Casa toda está alugada?)
+        // --- (REMOVIDO BLOCO A) ---
+        // Removemos a verificação "temReservaNessePeriodo" para a própria unidade,
+        // pois ela não sabe ignorar o ID no update. Deixamos essa checagem para o final.
+
+        // B. Checar conflito com o PAI (Propriedade maior)
+        // Aqui mantemos, pois se o Pai estiver ocupado, é por OUTRA reserva (outro ID), então é conflito real.
         if (unidade.getParent() != null) {
             if (temReservaNessePeriodo(unidade.getParent().getId(), r)) {
                 throw new IllegalArgumentException("Não é possível reservar: A propriedade principal (Pai) já está alugada.");
             }
         }
 
-        // C. Checar conflito com FILHOS (Se tento alugar a Casa toda, algum quarto está alugado?)
+        // C. Checar conflito com FILHOS (Sub-unidades)
         List<Unit> unidadesFilhas = unitRepository.findByParentId(unidade.getId());
         for (Unit filho : unidadesFilhas) {
             if (temReservaNessePeriodo(filho.getId(), r)) {
                 throw new IllegalArgumentException("Não é possível reservar a casa inteira: O quarto " + filho.getName() + " já está reservado.");
             }
         }
+
+        // D. Validação Final da Própria Unidade (Substitui o bloco A)
         List<Reservation> conflitos = reservationRepository.findConflictingReservations(
                 unidade.getId(), r.getCheckIn(), r.getCheckOut());
 
-        // --- ADICIONE ESTE BLOCO DE DEBUG ---
-        if (!conflitos.isEmpty()) {
-            System.out.println("🚨 CONFLITO ENCONTRADO! Detalhes:");
-            for (Reservation conf : conflitos) {
-                System.out.println("ID: " + conf.getId() +
-                        " | Status no Java: '" + conf.getStatus() + "'" +
-                        " | Tamanho: " + conf.getStatus().length());
-            }
-        }
-        // ------------------------------------
-
-        // Se for update, remove a própria reserva da lista...
+        // --- FILTRAGEM INTELIGENTE ---
+        // Se for uma EDIÇÃO (Update), removemos a própria reserva da lista de conflitos
         if (r.getId() != null) {
             conflitos.removeIf(res -> res.getId().equals(r.getId()));
         }
 
+        // Se sobrou alguém na lista, aí sim é um conflito real (outra pessoa)
         if (!conflitos.isEmpty()) {
+            System.out.println("🚨 CONFLITO REAL DETECTADO! A unidade já tem outra reserva.");
             throw new IllegalArgumentException("Esta unidade já está reservada para estas datas.");
         }
     }
@@ -172,60 +167,77 @@ public class ReservationServiceImpl implements IReservationService {
     public Reservation update(Long id, Reservation reservaAtualizada) {
         Reservation reservaExistente = findById(id);
 
-        // Verifica se houve mudança nas datas ou na unidade
-        boolean datasMudaram = !reservaExistente.getCheckIn().equals(reservaAtualizada.getCheckIn()) ||
-                !reservaExistente.getCheckOut().equals(reservaAtualizada.getCheckOut());
+        // -----------------------------------------------------------------------
+        // 1. ATUALIZAÇÃO MANUAL (Preço, Cliente e Notas)
+        // Isso garante que a alteração seja salva mesmo se as datas NÃO mudarem.
+        // -----------------------------------------------------------------------
+
+        // Se o usuário mandou um preço manual, atualizamos e marcamos uma flag
+        boolean precoManualFoiEnviado = false;
+        if (reservaAtualizada.getTotalAmount() != null) {
+            reservaExistente.setTotalAmount(reservaAtualizada.getTotalAmount());
+            precoManualFoiEnviado = true;
+        }
+
+        // Se mandou um cliente novo, atualiza
+        if (reservaAtualizada.getCustomer() != null) {
+            reservaExistente.setCustomer(reservaAtualizada.getCustomer());
+        }
+
+        // Se mandou status novo, atualiza
+        if (reservaAtualizada.getStatus() != null) {
+            reservaExistente.setStatus(reservaAtualizada.getStatus());
+        }
+
+        // -----------------------------------------------------------------------
+        // 2. LÓGICA DE DATAS E UNIDADE
+        // -----------------------------------------------------------------------
+
+        // Proteção contra NullPointerException nas datas
+        LocalDate checkInNovo = reservaAtualizada.getCheckIn() != null ? reservaAtualizada.getCheckIn() : reservaExistente.getCheckIn();
+        LocalDate checkOutNovo = reservaAtualizada.getCheckOut() != null ? reservaAtualizada.getCheckOut() : reservaExistente.getCheckOut();
+
+        boolean datasMudaram = !reservaExistente.getCheckIn().equals(checkInNovo) ||
+                !reservaExistente.getCheckOut().equals(checkOutNovo);
 
         boolean unidadeMudou = false;
-
         if (reservaAtualizada.getUnit() != null && reservaAtualizada.getUnit().getId() != null) {
             unidadeMudou = !reservaExistente.getUnit().getId().equals(reservaAtualizada.getUnit().getId());
         }
 
-        // Se mudou algo crítico, precisamos revalidar e recalcular
         if (datasMudaram || unidadeMudou) {
+            // Atualiza datas
+            reservaExistente.setCheckIn(checkInNovo);
+            reservaExistente.setCheckOut(checkOutNovo);
 
-            // 1. Atualiza os campos no objeto existente
-            reservaExistente.setCheckIn(reservaAtualizada.getCheckIn());
-            reservaExistente.setCheckOut(reservaAtualizada.getCheckOut());
-
-            // Se mudou a unidade, buscamos a nova no banco
+            // Se mudou unidade, carrega a nova
             if (unidadeMudou) {
                 Unit novaUnidade = unitRepository.findById(reservaAtualizada.getUnit().getId())
                         .orElseThrow(() -> new RuntimeException("Nova unidade não encontrada"));
                 reservaExistente.setUnit(novaUnidade);
             }
 
-            // 2. REVALIDA CONFLITOS (Importante!)
-            // Passamos a reservaExistente, pois o método validarConflitos sabe ignorar o ID dela mesma
+            // Valida conflitos (ignorando o próprio ID)
             validarConflitos(reservaExistente.getUnit(), reservaExistente);
 
-            // 3. RECALCULA O PREÇO (Cópia da lógica do save)
-            long dias = java.time.temporal.ChronoUnit.DAYS.between(
-                    reservaExistente.getCheckIn(),
-                    reservaExistente.getCheckOut());
+            // --- LÓGICA INTELIGENTE DE PREÇO ---
+            // Só recalculamos o preço automaticamente (Regra da Unidade)
+            // SE o usuário NÃO tiver enviado um preço manual agora.
+            // Se ele mandou 4000, respeitamos o 4000. Se não mandou nada, calculamos.
+            if (!precoManualFoiEnviado) {
+                long dias = ChronoUnit.DAYS.between(reservaExistente.getCheckIn(), reservaExistente.getCheckOut());
+                if (dias < 1) throw new IllegalArgumentException("A reserva deve ter no mínimo 1 diária.");
 
-            if (dias < 1) {
-                throw new IllegalArgumentException("A reserva deve ter no mínimo 1 diária.");
+                BigDecimal precoBase = reservaExistente.getUnit().getDefaultPrice();
+                if (precoBase != null) {
+                    BigDecimal novoValorCalculado = precoBase.multiply(BigDecimal.valueOf(dias));
+                    reservaExistente.setTotalAmount(novoValorCalculado);
+                }
             }
-
-            BigDecimal precoBase = reservaExistente.getUnit().getDefaultPrice();
-            if (precoBase == null) {
-                throw new IllegalStateException("Unidade sem preço configurado.");
-            }
-
-            BigDecimal novoValorTotal = precoBase.multiply(BigDecimal.valueOf(dias));
-            reservaExistente.setTotalAmount(novoValorTotal);
-        }
-
-        // Se o status veio no update (ex: CONFIRMED), atualizamos. Se não, mantemos o atual.
-        if (reservaAtualizada.getStatus() != null) {
-            reservaExistente.setStatus(reservaAtualizada.getStatus());
         }
 
         return reservationRepository.save(reservaExistente);
     }
-
 
 
     @Override
