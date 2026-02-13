@@ -22,7 +22,8 @@ public class WebSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())).authorizeHttpRequests(auth -> auth
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/customers/**").permitAll()
                        .requestMatchers(HttpMethod.GET, "/customers/**").permitAll()
                        .requestMatchers(HttpMethod.PUT, "/customers/**").permitAll()
@@ -67,18 +68,17 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 1. Quem pode acessar? (Front-end)
-        // Coloque "*" para liberar geral ou a URL específica do front (ex: localhost:3000)
-        configuration.setAllowedOrigins(List.of("http://localhost:3003", "http://localhost:5173", "*"));
+        // ATENÇÃO: Para Cookies, NÃO use "*". Coloque a URL EXATA do seu front.
+        // Se estiver testando no Insomnia/Postman, isso não afeta, mas no navegador sim.
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
 
-        // 2. Quais métodos são permitidos?
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
 
-        // 3. Quais cabeçalhos são aceitos? (Authorization é essencial para o JWT)
+        // Headers permitidos
         configuration.setAllowedHeaders(List.of("*"));
 
-        // 4. (Opcional) Permite envio de Cookies/Credenciais
-        // configuration.setAllowCredentials(true);
+        // OBRIGATÓRIO PARA COOKIES: Permite enviar credenciais
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

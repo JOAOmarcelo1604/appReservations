@@ -8,4 +8,5 @@ public interface IAuthService {
 
     //public Customer criarUsuario(Customer novo);
     UsuarioToken realizarLogin(LoginDTO dadosLogin);
+    UsuarioToken buscarUsuarioPorEmail(String email);
 }
