@@ -50,4 +50,10 @@ public class UnitController {
         syncService.syncAllUnits();
         return ResponseEntity.ok("Sincronização iniciada! Verifique os logs.");
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Unit> update(@PathVariable Long id, @RequestBody UnitDTO dto) {
+        Unit unitAtualizada = service.update(id, dto);
+        return ResponseEntity.ok(unitAtualizada);
+    }
 }

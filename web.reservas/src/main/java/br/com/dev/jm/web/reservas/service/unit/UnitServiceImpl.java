@@ -21,12 +21,21 @@ public class UnitServiceImpl implements IUnitService {
     public Unit save(UnitDTO dto) {
         Unit unit = Unit.builder()
                 .name(dto.getName())
+                .bathrooms(dto.getBathrooms())
+                .bedrooms(dto.getBedrooms())
+                .beds(dto.getBeds())
                 .capacity(dto.getCapacity())
+                .areaM2(dto.getAreaM2())
                 .defaultPrice(dto.getDefaultPrice())
                 .description(dto.getDescription())
                 .city(dto.getCity())
                 .state(dto.getState())
                 .address(dto.getAddress())
+                .wifi(dto.getWifi())
+                .pool(dto.getPool())
+                .parking(dto.getParking())
+                .airConditioning(dto.getAirConditioning())
+                .bbqGrill(dto.getBbqGrill())
                 .build();
 
         // Lógica de Hierarquia
@@ -64,5 +73,45 @@ public class UnitServiceImpl implements IUnitService {
 
         // C. Salva na tabela unit_images
         unitImageRepository.save(newImage);
+    }
+
+    @Override
+    public Unit update(Long id, UnitDTO dto) {
+        // 1. Busca o imóvel existente (ou lança erro se não achar)
+        Unit unit = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Imóvel não encontrado com ID: " + id));
+
+        // 2. Só atualiza o Nome se o DTO trouxe um nome novo
+        if (dto.getName() != null && !dto.getName().isEmpty()) {
+            unit.setName(dto.getName());
+        }
+
+        // 3. Só atualiza a Descrição se vier preenchida
+        if (dto.getDescription() != null) {
+            unit.setDescription(dto.getDescription());
+        }
+
+        // 4. Só atualiza o Endereço se vier preenchido
+        if (dto.getAddress() != null) {
+            unit.setAddress(dto.getAddress());
+        }
+
+        // 5. Só atualiza o Preço se vier preenchido
+        if (dto.getDefaultPrice() != null) {
+            unit.setDefaultPrice(dto.getDefaultPrice());
+        }
+
+        // 3. Atualiza os detalhes (Quartos, Banheiros, Camas)
+        if (dto.getBedrooms() != null) unit.setBedrooms(dto.getBedrooms());
+        if (dto.getBathrooms() != null) unit.setBathrooms(dto.getBathrooms());
+        if (dto.getBeds() != null) unit.setBeds(dto.getBeds());
+
+        // 4. Atualiza os Links Externos (Airbnb / Vrbo)
+        // Certifique-se que esses campos existem no seu UnitDTO e Entity Unit
+        if (dto.getAirbnbUrl() != null) unit.setAirbnbUrl(dto.getAirbnbUrl());
+        if (dto.getVrboUrl() != null) unit.setVrboUrl(dto.getVrboUrl());
+
+        // 5. Salva e retorna
+        return repository.save(unit);
     }
 }

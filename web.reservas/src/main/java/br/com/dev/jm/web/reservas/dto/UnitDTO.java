@@ -22,4 +22,14 @@ public class UnitDTO {
     private BigDecimal areaM2;
     private String vrboUrl;
     private String airbnbUrl;
+
+    private Integer bedrooms;
+    private Integer bathrooms;
+    private Integer beds;
+
+    private Boolean wifi;
+    private Boolean pool;
+    private Boolean parking;
+    private Boolean airConditioning;
+    private Boolean bbqGrill;
 }

@@ -51,6 +51,27 @@ public class Unit {
     @Column(name = "address", unique = true)
     private String address;
 
+    @Column(name = "bedrooms")
+    private Integer bedrooms; // Integer aceita null (bom para cadastro parcial)
+
+    @Column(name = "bathrooms")
+    private Integer bathrooms;
+
+    @Column(name = "beds")
+    private Integer beds;
+
+    private Boolean wifi;
+
+    private Boolean pool; // Piscina
+
+    private Boolean parking; // Estacionamento
+
+    @Column(name = "air_conditioning")
+    private Boolean airConditioning;
+
+    @Column(name = "bbq_grill")
+    private Boolean bbqGrill;
+
     @Column(name = "vrbo_url")
     private String vrboUrl;
 
