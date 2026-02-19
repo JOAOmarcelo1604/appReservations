@@ -25,22 +25,21 @@ public class WebSecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/customers/**").permitAll()
-                       .requestMatchers(HttpMethod.GET, "/customers/**").permitAll()
-                       .requestMatchers(HttpMethod.PUT, "/customers/**").permitAll()
-                         .requestMatchers(HttpMethod.POST, "/reservations/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/reservations/**").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/reservations/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/reservations/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/units/**").permitAll()
+                       //.requestMatchers(HttpMethod.GET, "/customers/**").permitAll()
+                       //.requestMatchers(HttpMethod.PUT, "/customers/**").permitAll()
+                        // .requestMatchers(HttpMethod.POST, "/reservations/**").permitAll()
+                        //.requestMatchers(HttpMethod.GET, "/reservations/**").permitAll()
+                        //.requestMatchers(HttpMethod.PUT, "/reservations/**").permitAll()
+                        //.requestMatchers(HttpMethod.DELETE, "/reservations/**").permitAll()
+                        //equestMatchers(HttpMethod.POST, "/units/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/units/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/v3/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/sync/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/review").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/review").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/vrbo/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/vrbo/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                        //.requestMatchers("/api/sync/**").permitAll()
+                        //.requestMatchers(HttpMethod.POST, "/review").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
+                        .requestMatchers("/api/sync/**", "/api/vrbo/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reservations/occupied-dates/**").permitAll()
 
 
 
@@ -76,6 +75,12 @@ public class WebSecurityConfig {
 
         // Headers permitidos
         configuration.setAllowedHeaders(List.of("*"));
+
+        // 3. Libera os cabeçalhos (inclusive Content-Type e Authorization)
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "x-auth-token"));
+
+        // 4. O MAIS IMPORTANTE: Permite Credenciais (Cookies)
+        configuration.setAllowCredentials(true);
 
         // OBRIGATÓRIO PARA COOKIES: Permite enviar credenciais
         configuration.setAllowCredentials(true);

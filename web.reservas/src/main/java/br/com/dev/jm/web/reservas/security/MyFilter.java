@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -14,6 +15,10 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class MyFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private TokenUtil tokenUtil;
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -50,5 +55,30 @@ public class MyFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+
+        // CORREÇÃO: Pula o filtro APENAS se for Login/Cadastro (POST)
+        // Se for GET (como o /auth/me), o filtro VAI rodar e ler o cookie!
+        if (path.startsWith("/auth/") && request.getMethod().equals("POST")) {
+            return true;
+        }
+
+        // Mantém a regra pública para Imóveis, se quiser
+        if (path.startsWith("/units") && request.getMethod().equals("GET")) {
+            return true;
+        }
+        if (path.startsWith("/reservations/occupied-dates") && request.getMethod().equals("GET")) {
+            return true;
+        }
+
+        if (path.startsWith("/reviews") && request.getMethod().equals("GET")) {
+            return true;
+        }
+
+        return false;
     }
 }

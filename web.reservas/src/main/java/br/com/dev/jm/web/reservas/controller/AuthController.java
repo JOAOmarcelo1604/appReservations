@@ -1,8 +1,10 @@
 package br.com.dev.jm.web.reservas.controller;
 
 import br.com.dev.jm.web.reservas.dto.LoginDTO;
+import br.com.dev.jm.web.reservas.security.TokenUtil;
 import br.com.dev.jm.web.reservas.security.UsuarioToken;
 import br.com.dev.jm.web.reservas.service.auth.IAuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -56,16 +58,16 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<UsuarioToken> getMe() {
-        // O filtro JwtAuthenticationFilter já validou o Cookie antes de chegar aqui.
-        // Então, basta pegar o usuário autenticado do contexto.
+        // Agora o SecurityContextHolder vai ter o usuário!
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // Você precisará de um método no seu Service para buscar os dados pelo email/username
-        // Exemplo:
-        var usuario = authService.buscarUsuarioPorEmail(auth.getName());
+        if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
+            String email = (String) auth.getPrincipal();
+            UsuarioToken usuario = authService.buscarUsuarioPorEmail(email);
+            return ResponseEntity.ok(usuario);
+        }
 
-        // Retorne os dados do usuário (SEM O TOKEN, pois já está no cookie)
-        return ResponseEntity.ok(usuario);
+        return ResponseEntity.status(401).build();
     }
 
     // Opcional: Endpoint de Logout para limpar o cookie

@@ -7,6 +7,7 @@ import java.util.List;
 
 @Data
 public class UnitDTO {
+    private Long id;
     private String name;
     private Integer capacity;
     private BigDecimal defaultPrice;
@@ -22,6 +23,8 @@ public class UnitDTO {
     private BigDecimal areaM2;
     private String vrboUrl;
     private String airbnbUrl;
+
+
 
     private Integer bedrooms;
     private Integer bathrooms;

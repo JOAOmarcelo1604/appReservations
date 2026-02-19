@@ -26,7 +26,7 @@ public class DailyPricing {
     private LocalDate date;
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal price; // Dinheiro sempre BigDecimal
+    private BigDecimal price;
 
     @Column(name = "is_available", nullable = false)
     @Builder.Default

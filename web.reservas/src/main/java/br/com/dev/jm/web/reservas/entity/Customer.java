@@ -10,6 +10,8 @@ import org.hibernate.validator.constraints.br.CPF;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "customers")
@@ -59,6 +61,14 @@ public class Customer {
 
     @Column(name = "role", length = 20, nullable = false)
     private String role;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "customer_favorites",
+            joinColumns = @JoinColumn(name = "customer_id"),
+            inverseJoinColumns = @JoinColumn(name = "unit_id")
+    )
+    private Set<Unit> favorites = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {

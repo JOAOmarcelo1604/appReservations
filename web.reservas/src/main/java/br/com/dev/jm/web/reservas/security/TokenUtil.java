@@ -12,6 +12,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 
+import io.jsonwebtoken.ExpiredJwtException;
+
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -32,7 +34,7 @@ public class TokenUtil {
     public static final long MINUTOS    = 60 * SEGUNDOS;
     public static final long HORAS      = 60 * MINUTOS;
     public static final long DIAS       = 24 * HORAS;
-    public static final long EXPIRATION = 10 * HORAS;
+    public static final long EXPIRATION = 3 * HORAS;
 
     public static final String ISSUER   = "*IsiFLIX*";
 
@@ -110,9 +112,16 @@ public class TokenUtil {
                 // Sucesso! Retorna o usuário autenticado
                 return new UsernamePasswordAuthenticationToken(subject, null, Collections.emptyList());
             }
+        } catch (ExpiredJwtException e) {
+            // CASO 1: Token Vencido.
+            // Isso é normal (sessão expirou). Não fazemos print no console.
+            // Apenas retornamos null, e o filtro entenderá que é um usuário anônimo.
+            return null;
+
         } catch (Exception e) {
-            // Token inválido, expirado ou adulterado
-            System.out.println("Erro ao decodificar token: " + e.getMessage());
+            // CASO 2: Token Falso, Assinatura Inválida ou Malformado.
+            // Isso pode ser uma tentativa de ataque, então logamos.
+            System.out.println("Falha de segurança no token: " + e.getMessage());
         }
         return null;
     }
